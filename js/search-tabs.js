@@ -196,7 +196,7 @@ jQuery(document).ready(function($) {
         $(this).addClass('active');
 
         var serviceType = $(this).data('service');
-        
+
         // Update the hidden field with the selected service
         $('#selected_service').val(serviceType);
 
@@ -245,41 +245,41 @@ jQuery(document).ready(function($) {
     // Trigger change on default pet type on page load
     $('input[name="search_pet_type"]:checked').trigger('change');
 
-    // Handle pet photo uploads
-    $('.pet-photo-upload-box').on('click', function() {
-        const inputId = $(this).attr('id').replace('pet-photo-upload-', 'pet-photo-input-');
-        $(`#${inputId}`).click();
-    });
-
-    // Make sure the click event is properly triggered
-    $('.upload-placeholder').on('click', function(e) {
-        e.stopPropagation(); // Prevent event bubbling
-        const uploadBox = $(this).closest('.pet-photo-upload-box');
-        const inputId = uploadBox.attr('id').replace('pet-photo-upload-', 'pet-photo-input-');
-        $(`#${inputId}`).click();
-    });
-
+    // Handle file input change events - FIXED VERSION
     $('input[type="file"]').on('change', function(e) {
         const file = e.target.files[0];
         if (file && file.type.startsWith('image/')) {
             const reader = new FileReader();
-            const uploadBox = $(this).closest('.pet-photo-upload-box');
-            const boxNumber = uploadBox.attr('id').split('-').pop();
+            const boxNumber = this.id.split('-').pop();
             
             reader.onload = function(e) {
-                const previewItem = $(`
-                    <div class="pet-photo-preview-item" data-box="${boxNumber}">
-                        <img src="${e.target.result}" alt="Pet photo">
-                        <div class="remove-photo">&times;</div>
-                    </div>
-                `);
+                // Create preview element
+                const previewContainer = $('#pet-photo-preview');
                 
-                // Remove any existing preview for this box
-                $(`.pet-photo-preview-item[data-box="${boxNumber}"]`).remove();
-                $('#pet-photo-preview').append(previewItem);
+                // Remove existing preview for this box
+                previewContainer.find(`[data-box="${boxNumber}"]`).remove();
                 
-                // Hide the upload box after successful upload
-                uploadBox.hide();
+                // Create new preview
+                const previewItem = $('<div>', {
+                    'class': 'pet-photo-preview-item',
+                    'data-box': boxNumber
+                });
+                
+                const img = $('<img>', {
+                    'src': e.target.result,
+                    'alt': 'Pet photo'
+                });
+                
+                const removeBtn = $('<div>', {
+                    'class': 'remove-photo',
+                    'html': '&times;'
+                });
+                
+                previewItem.append(img, removeBtn);
+                previewContainer.append(previewItem);
+                
+                // Hide the upload box
+                $(`#pet-photo-upload-${boxNumber}`).hide();
             };
             
             reader.readAsDataURL(file);
@@ -290,6 +290,7 @@ jQuery(document).ready(function($) {
     $(document).on('click', '.remove-photo', function() {
         const boxNumber = $(this).parent().data('box');
         $(this).parent().remove();
+        $(`#pet-photo-input-${boxNumber}`).val('');
         $(`#pet-photo-upload-${boxNumber}`).show();
     });
-}); 
+});

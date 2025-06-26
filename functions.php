@@ -29,6 +29,105 @@ function petcare_scripts() {
 }
 add_action('wp_enqueue_scripts', 'petcare_scripts');
 
+// Include email settings and mailer
+require_once get_template_directory() . '/inc/email-settings.php';
+require_once get_template_directory() . '/inc/mailer.php';
+
+// Handle form submission and send email
+function petcare_handle_form_submission() {
+    // Check if the form was submitted
+    if (isset($_POST['form_submitted']) && $_POST['form_submitted'] == 1) {
+        // Get recipient email from settings or use admin email as fallback
+        $recipient_email = get_option('petcare_recipient_email', get_option('admin_email'));
+        
+        // Prepare email subject
+        $subject = 'New Pet Service Request from ' . get_bloginfo('name');
+        
+        // Collect form data
+        $pet_type = isset($_POST['search_pet_type']) ? sanitize_text_field($_POST['search_pet_type']) : 'Not specified';
+        $service = '';
+        
+        // Determine which service was selected
+        if (isset($_POST['service_tab'])) {
+            $service = sanitize_text_field($_POST['service_tab']);
+        }
+        
+        $location = isset($_POST['location']) ? sanitize_text_field($_POST['location']) : 'Not specified';
+        $drop_off = isset($_POST['drop_off']) ? sanitize_text_field($_POST['drop_off']) : 'Not specified';
+        $pick_up = isset($_POST['pick_up']) ? sanitize_text_field($_POST['pick_up']) : 'Not specified';
+        $street_address = isset($_POST['street_address']) ? sanitize_text_field($_POST['street_address']) : 'Not specified';
+        $zip_code = isset($_POST['zip_code']) ? sanitize_text_field($_POST['zip_code']) : 'Not specified';
+        $dog_size = isset($_POST['dog_size']) ? sanitize_text_field($_POST['dog_size']) : 'Not specified';
+        
+        // Prepare email message
+        $message = "A new pet service request has been submitted:\n\n";
+        $message .= "Pet Type: " . $pet_type . "\n";
+        $message .= "Service: " . $service . "\n";
+        $message .= "Location: " . $location . "\n";
+        $message .= "Drop-off Date: " . $drop_off . "\n";
+        $message .= "Pick-up Date: " . $pick_up . "\n";
+        $message .= "Street Address: " . $street_address . "\n";
+        $message .= "Zip Code: " . $zip_code . "\n";
+        $message .= "Dog Size: " . $dog_size . "\n\n";
+        $message .= "This email was sent from the pet service form on your website.";
+        
+        // Handle file uploads
+        $attachments = array();
+        $upload_dir = wp_upload_dir();
+        $pet_photos_dir = $upload_dir['basedir'] . '/pet-photos';
+        
+        // Create directory if it doesn't exist
+        if (!file_exists($pet_photos_dir)) {
+            wp_mkdir_p($pet_photos_dir);
+        }
+        
+        // Process each uploaded file
+        for ($i = 1; $i <= 3; $i++) {
+            $file_key = 'pet_photo_' . $i;
+            
+            if (isset($_FILES[$file_key]) && $_FILES[$file_key]['error'] === UPLOAD_ERR_OK) {
+                $tmp_name = $_FILES[$file_key]['tmp_name'];
+                $name = sanitize_file_name($_FILES[$file_key]['name']);
+                $type = $_FILES[$file_key]['type'];
+                
+                // Only process image files
+                if (strpos($type, 'image/') === 0) {
+                    $destination = $pet_photos_dir . '/' . time() . '_' . $name;
+                    
+                    // Move the uploaded file
+                    if (move_uploaded_file($tmp_name, $destination)) {
+                        $attachments[] = array(
+                            'path' => $destination,
+                            'name' => $name,
+                            'type' => $type
+                        );
+                        
+                        // Add to email message
+                        $message .= "\nPet Photo " . $i . ": " . $name;
+                    }
+                }
+            }
+        }
+        
+        // Send email using PHPMailer
+        $mail_sent = petcare_send_email($recipient_email, $subject, $message, $attachments);
+        
+        // Set a session variable to show a success message
+        if ($mail_sent) {
+            // Store success message in a session or transient
+            set_transient('form_submission_success', true, 60);
+        } else {
+            // Store error message
+            set_transient('form_submission_error', true, 60);
+        }
+        
+        // Redirect to prevent form resubmission
+        wp_redirect(home_url('/thank-you/'));
+        exit;
+    }
+}
+add_action('template_redirect', 'petcare_handle_form_submission');
+
 // Register Custom Post Types
 function petcare_register_post_types() {
     // Pet Sitters

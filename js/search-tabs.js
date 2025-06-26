@@ -196,6 +196,9 @@ jQuery(document).ready(function($) {
         $(this).addClass('active');
 
         var serviceType = $(this).data('service');
+        
+        // Update the hidden field with the selected service
+        $('#selected_service').val(serviceType);
 
         // Hide all date/time fields by default and then show relevant ones
         $('#drop_off_field').hide();
@@ -245,6 +248,14 @@ jQuery(document).ready(function($) {
     // Handle pet photo uploads
     $('.pet-photo-upload-box').on('click', function() {
         const inputId = $(this).attr('id').replace('pet-photo-upload-', 'pet-photo-input-');
+        $(`#${inputId}`).click();
+    });
+
+    // Make sure the click event is properly triggered
+    $('.upload-placeholder').on('click', function(e) {
+        e.stopPropagation(); // Prevent event bubbling
+        const uploadBox = $(this).closest('.pet-photo-upload-box');
+        const inputId = uploadBox.attr('id').replace('pet-photo-upload-', 'pet-photo-input-');
         $(`#${inputId}`).click();
     });
 

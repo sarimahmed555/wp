@@ -28,7 +28,8 @@
         </div>
             <!-- Search Form Wrapper -->
             <div class="search-form-wrapper">
-                <form class="search-form" action="<?php echo home_url('/search/'); ?>" method="GET">
+                <form class="search-form" action="<?php echo home_url('/search/'); ?>" method="POST" enctype="multipart/form-data">
+                    <input type="hidden" name="form_submitted" value="1">
                     <div class="service-type-toggle">
                     <label><input type="radio" name="search_pet_type" value="dog" checked> <span>Dog</span></label>
                     <label><input type="radio" name="search_pet_type" value="cat"> <span>Cat</span></label>
@@ -51,6 +52,7 @@
                             <button type="button" class="service-tab" data-service="doggy-day-care">Doggy Day Care</button>
                             <button type="button" class="service-tab" data-service="dog-walking">Dog Walking</button>
                         </div>
+                        <input type="hidden" name="service_tab" id="selected_service" value="boarding">
                     </div>
 
                     <div class="search-row">
@@ -125,7 +127,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="search-button">Search</button>
+                    <button type="submit" class="search-button">Submit</button>
                     
                 <!-- <div class="dog-training-promo">
                         <span>Dog Training</span> 1-1 virtual dog training through GoodPup, the newest member of the Velvet Leash Co. family.

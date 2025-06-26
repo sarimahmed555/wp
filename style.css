@@ -2556,3 +2556,30 @@ select {
 .back-to-help .button:hover {
     background-color: var(--primary-color);
 }
+
+/* Thank You Page Styles */
+.thank-you-section {
+    padding: 60px 0;
+    text-align: center;
+}
+
+.thank-you-message {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 30px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.success-message {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #e8f5e9;
+    border-left: 4px solid #4caf50;
+    text-align: left;
+}
+
+.return-home {
+    margin-top: 30px;
+}

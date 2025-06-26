@@ -15,6 +15,17 @@
         <div class="site-logo">
             <a href="<?php echo home_url(); ?>"><img src="<?php echo get_template_directory_uri(); ?>/assets/images/velvet-leash-logo.png" alt="Velvet Leash Co." class="custom-logo"></a>
         </div>
+        
+        <?php if (isset($_GET['form_status'])): ?>
+            <div class="form-status-message <?php echo ($_GET['form_status'] === 'success') ? 'success-message' : 'error-message'; ?>">
+                <?php if ($_GET['form_status'] === 'success'): ?>
+                    <p>Thank you! Your pet service request has been submitted successfully. We'll contact you shortly.</p>
+                <?php else: ?>
+                    <p>There was an issue processing your request. Please try again or contact us directly.</p>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+        
         <div class="animated-pic-sec">
             <dotlottie-player src="https://lottie.host/0e0b6344-0430-4365-97e7-b55a359f9dec/VErshxYIM3.lottie" background="transparent" speed="1" style="width: 300px; height: 300px;" loop autoplay class="hero-dog-animation2"></dotlottie-player> <!-- Dog Animation moved outside hero-content-text-wrapper for absolute positioning -->
             <dotlottie-player src="https://lottie.host/9506e324-e9f8-4d34-bdef-e8db9f0a3f55/IwAZnOaAq1.lottie" background="transparent" speed="1" style="width: 300px; height: 300px;" loop autoplay class="hero-dog-animation1"></dotlottie-player>
@@ -28,7 +39,7 @@
         </div>
             <!-- Search Form Wrapper -->
             <div class="search-form-wrapper">
-                <form class="search-form" action="<?php echo home_url('/search/'); ?>" method="POST" enctype="multipart/form-data">
+                <form class="search-form" action="<?php echo home_url('/'); ?>" method="POST" enctype="multipart/form-data">
                     <input type="hidden" name="form_submitted" value="1">
                     <div class="service-type-toggle">
                     <label><input type="radio" name="search_pet_type" value="dog" checked> <span>Dog</span></label>
@@ -87,7 +98,7 @@
                     <div class="pet-photo-upload-container">
                         <div class="pet-photo-upload-box" id="pet-photo-upload-1">
                             <input type="file" id="pet-photo-input-1" name="pet_photo_1" accept="image/*" style="display: none;">
-                            <div class="upload-placeholder">
+                            <div class="upload-placeholder" onclick="document.getElementById('pet-photo-input-1').click();">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
@@ -96,7 +107,7 @@
                         </div>
                         <div class="pet-photo-upload-box" id="pet-photo-upload-2">
                             <input type="file" id="pet-photo-input-2" name="pet_photo_2" accept="image/*" style="display: none;">
-                            <div class="upload-placeholder">
+                            <div class="upload-placeholder" onclick="document.getElementById('pet-photo-input-2').click();">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
@@ -105,7 +116,7 @@
                         </div>
                         <div class="pet-photo-upload-box" id="pet-photo-upload-3">
                             <input type="file" id="pet-photo-input-3" name="pet_photo_3" accept="image/*" style="display: none;">
-                            <div class="upload-placeholder">
+                            <div class="upload-placeholder" onclick="document.getElementById('pet-photo-input-3').click();">
                                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
@@ -115,6 +126,71 @@
                     </div>
                     <div class="pet-photo-preview" id="pet-photo-preview"></div>
                     <p class="upload-hint">Upload up to 3 photos of your pets</p>
+                    
+                    <script>
+                    // Inline script to ensure photo upload works
+                    document.addEventListener('DOMContentLoaded', function() {
+                        // Handle file input change events
+                        document.querySelectorAll('input[type="file"]').forEach(function(input) {
+                            input.addEventListener('change', function(e) {
+                                const file = e.target.files[0];
+                                if (file && file.type.startsWith('image/')) {
+                                    const reader = new FileReader();
+                                    const boxNumber = this.id.split('-').pop();
+                                    
+                                    reader.onload = function(e) {
+                                        // Create preview element
+                                        const previewContainer = document.getElementById('pet-photo-preview');
+                                        
+                                        // Remove existing preview for this box
+                                        const existingPreviews = previewContainer.querySelectorAll(`[data-box="${boxNumber}"]`);
+                                        existingPreviews.forEach(function(preview) {
+                                            preview.remove();
+                                        });
+                                        
+                                        // Create new preview
+                                        const previewItem = document.createElement('div');
+                                        previewItem.className = 'pet-photo-preview-item';
+                                        previewItem.setAttribute('data-box', boxNumber);
+                                        
+                                        previewItem.innerHTML = `
+                                            <img src="${e.target.result}" alt="Pet photo">
+                                            <div class="remove-photo" onclick="removePhoto(${boxNumber});">&times;</div>
+                                        `;
+                                        
+                                        previewContainer.appendChild(previewItem);
+                                        
+                                        // Hide the upload box
+                                        document.getElementById(`pet-photo-upload-${boxNumber}`).style.display = 'none';
+                                    };
+                                    
+                                    reader.readAsDataURL(file);
+                                }
+                            });
+                        });
+                    });
+                    
+                    // Function to remove a photo
+                    function removePhoto(boxNumber) {
+                        // Remove the preview
+                        const previewItem = document.querySelector(`.pet-photo-preview-item[data-box="${boxNumber}"]`);
+                        if (previewItem) {
+                            previewItem.remove();
+                        }
+                        
+                        // Clear the file input
+                        const fileInput = document.getElementById(`pet-photo-input-${boxNumber}`);
+                        if (fileInput) {
+                            fileInput.value = '';
+                        }
+                        
+                        // Show the upload box again
+                        const uploadBox = document.getElementById(`pet-photo-upload-${boxNumber}`);
+                        if (uploadBox) {
+                            uploadBox.style.display = 'block';
+                        }
+                    }
+                    </script>
                     </div>
 
                     <div class="search-row pet-size-row">

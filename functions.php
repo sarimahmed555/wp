@@ -37,93 +37,148 @@ require_once get_template_directory() . '/inc/mailer.php';
 function petcare_handle_form_submission() {
     // Check if the form was submitted
     if (isset($_POST['form_submitted']) && $_POST['form_submitted'] == 1) {
-        // Get recipient email from settings or use admin email as fallback
-        $recipient_email = get_option('petcare_recipient_email', get_option('admin_email'));
-        
-        // Prepare email subject
-        $subject = 'New Pet Service Request from ' . get_bloginfo('name');
-        
-        // Collect form data
-        $pet_type = isset($_POST['search_pet_type']) ? sanitize_text_field($_POST['search_pet_type']) : 'Not specified';
-        $service = '';
-        
-        // Determine which service was selected
-        if (isset($_POST['service_tab'])) {
-            $service = sanitize_text_field($_POST['service_tab']);
-        }
-        
-        $location = isset($_POST['location']) ? sanitize_text_field($_POST['location']) : 'Not specified';
-        $drop_off = isset($_POST['drop_off']) ? sanitize_text_field($_POST['drop_off']) : 'Not specified';
-        $pick_up = isset($_POST['pick_up']) ? sanitize_text_field($_POST['pick_up']) : 'Not specified';
-        $street_address = isset($_POST['street_address']) ? sanitize_text_field($_POST['street_address']) : 'Not specified';
-        $zip_code = isset($_POST['zip_code']) ? sanitize_text_field($_POST['zip_code']) : 'Not specified';
-        $dog_size = isset($_POST['dog_size']) ? sanitize_text_field($_POST['dog_size']) : 'Not specified';
-        
-        // Prepare email message
-        $message = "A new pet service request has been submitted:\n\n";
-        $message .= "Pet Type: " . $pet_type . "\n";
-        $message .= "Service: " . $service . "\n";
-        $message .= "Location: " . $location . "\n";
-        $message .= "Drop-off Date: " . $drop_off . "\n";
-        $message .= "Pick-up Date: " . $pick_up . "\n";
-        $message .= "Street Address: " . $street_address . "\n";
-        $message .= "Zip Code: " . $zip_code . "\n";
-        $message .= "Dog Size: " . $dog_size . "\n\n";
-        $message .= "This email was sent from the pet service form on your website.";
-        
-        // Handle file uploads
-        $attachments = array();
-        $upload_dir = wp_upload_dir();
-        $pet_photos_dir = $upload_dir['basedir'] . '/pet-photos';
-        
-        // Create directory if it doesn't exist
-        if (!file_exists($pet_photos_dir)) {
-            wp_mkdir_p($pet_photos_dir);
-        }
-        
-        // Process each uploaded file
-        for ($i = 1; $i <= 3; $i++) {
-            $file_key = 'pet_photo_' . $i;
+        try {
+            // Enable error logging
+            ini_set('display_errors', 1);
+            ini_set('display_startup_errors', 1);
+            error_reporting(E_ALL);
             
-            if (isset($_FILES[$file_key]) && $_FILES[$file_key]['error'] === UPLOAD_ERR_OK) {
-                $tmp_name = $_FILES[$file_key]['tmp_name'];
-                $name = sanitize_file_name($_FILES[$file_key]['name']);
-                $type = $_FILES[$file_key]['type'];
+            // Log form submission
+            error_log('Pet service form submitted');
+            
+            // Get recipient email from settings or use admin email as fallback
+            $recipient_email = get_option('petcare_recipient_email', get_option('admin_email'));
+            
+            // Prepare email subject
+            $subject = 'New Pet Service Request from ' . get_bloginfo('name');
+            
+            // Collect form data
+            $pet_type = isset($_POST['search_pet_type']) ? sanitize_text_field($_POST['search_pet_type']) : 'Not specified';
+            $service = '';
+            
+            // Determine which service was selected
+            if (isset($_POST['service_tab'])) {
+                $service = sanitize_text_field($_POST['service_tab']);
+            }
+            
+            $location = isset($_POST['location']) ? sanitize_text_field($_POST['location']) : 'Not specified';
+            $drop_off = isset($_POST['drop_off']) ? sanitize_text_field($_POST['drop_off']) : 'Not specified';
+            $pick_up = isset($_POST['pick_up']) ? sanitize_text_field($_POST['pick_up']) : 'Not specified';
+            $street_address = isset($_POST['street_address']) ? sanitize_text_field($_POST['street_address']) : 'Not specified';
+            $zip_code = isset($_POST['zip_code']) ? sanitize_text_field($_POST['zip_code']) : 'Not specified';
+            $dog_size = isset($_POST['dog_size']) ? sanitize_text_field($_POST['dog_size']) : 'Not specified';
+            
+            // Prepare email message
+            $message = "A new pet service request has been submitted:\n\n";
+            $message .= "Pet Type: " . $pet_type . "\n";
+            $message .= "Service: " . $service . "\n";
+            $message .= "Location: " . $location . "\n";
+            $message .= "Drop-off Date: " . $drop_off . "\n";
+            $message .= "Pick-up Date: " . $pick_up . "\n";
+            $message .= "Street Address: " . $street_address . "\n";
+            $message .= "Zip Code: " . $zip_code . "\n";
+            $message .= "Dog Size: " . $dog_size . "\n\n";
+            $message .= "This email was sent from the pet service form on your website.";
+            
+            // Log the message
+            error_log('Email message prepared: ' . $message);
+            
+            // Handle file uploads
+            $attachments = array();
+            $upload_dir = wp_upload_dir();
+            $pet_photos_dir = $upload_dir['basedir'] . '/pet-photos';
+            
+            // Create directory if it doesn't exist
+            if (!file_exists($pet_photos_dir)) {
+                wp_mkdir_p($pet_photos_dir);
+                error_log('Created pet photos directory: ' . $pet_photos_dir);
+            }
+            
+            // Process each uploaded file
+            for ($i = 1; $i <= 3; $i++) {
+                $file_key = 'pet_photo_' . $i;
                 
-                // Only process image files
-                if (strpos($type, 'image/') === 0) {
-                    $destination = $pet_photos_dir . '/' . time() . '_' . $name;
+                if (isset($_FILES[$file_key]) && $_FILES[$file_key]['error'] === UPLOAD_ERR_OK) {
+                    $tmp_name = $_FILES[$file_key]['tmp_name'];
+                    $name = sanitize_file_name($_FILES[$file_key]['name']);
+                    $type = $_FILES[$file_key]['type'];
                     
-                    // Move the uploaded file
-                    if (move_uploaded_file($tmp_name, $destination)) {
-                        $attachments[] = array(
-                            'path' => $destination,
-                            'name' => $name,
-                            'type' => $type
-                        );
+                    error_log('Processing file: ' . $name . ' (Type: ' . $type . ')');
+                    
+                    // Only process image files
+                    if (strpos($type, 'image/') === 0) {
+                        $destination = $pet_photos_dir . '/' . time() . '_' . $name;
                         
-                        // Add to email message
-                        $message .= "\nPet Photo " . $i . ": " . $name;
+                        // Move the uploaded file
+                        if (move_uploaded_file($tmp_name, $destination)) {
+                            $attachments[] = array(
+                                'path' => $destination,
+                                'name' => $name,
+                                'type' => $type
+                            );
+                            
+                            // Add to email message
+                            $message .= "\nPet Photo " . $i . ": " . $name;
+                            error_log('File uploaded successfully: ' . $destination);
+                        } else {
+                            error_log('Failed to move uploaded file from ' . $tmp_name . ' to ' . $destination);
+                        }
+                    } else {
+                        error_log('File is not an image: ' . $type);
                     }
+                } else if (isset($_FILES[$file_key])) {
+                    error_log('File upload error for ' . $file_key . ': ' . $_FILES[$file_key]['error']);
                 }
             }
+            
+            // Use wp_mail as a fallback if PHPMailer is causing issues
+            $headers = array(
+                'Content-Type: text/plain; charset=UTF-8',
+                'From: ' . get_bloginfo('name') . ' <' . get_option('admin_email') . '>',
+                'Reply-To: ' . get_option('admin_email')
+            );
+            
+            // Try to send with PHPMailer first
+            $mail_sent = false;
+            try {
+                error_log('Attempting to send email with PHPMailer');
+                $mail_sent = petcare_send_email($recipient_email, $subject, $message, $attachments);
+                error_log('PHPMailer result: ' . ($mail_sent ? 'success' : 'failed'));
+            } catch (Exception $e) {
+                error_log('PHPMailer exception: ' . $e->getMessage());
+                // If PHPMailer fails, try wp_mail as fallback
+                error_log('Falling back to wp_mail');
+                $mail_sent = wp_mail($recipient_email, $subject, $message, $headers);
+                error_log('wp_mail result: ' . ($mail_sent ? 'success' : 'failed'));
+            }
+            
+            // Set a session variable to show a success message
+            if ($mail_sent) {
+                // Store success message in a session or transient
+                set_transient('form_submission_success', true, 60);
+                error_log('Email sent successfully');
+            } else {
+                // Store error message
+                set_transient('form_submission_error', true, 60);
+                error_log('Failed to send email');
+            }
+            
+            // Check if thank-you page exists, if not redirect to home
+            $thank_you_page = get_page_by_path('thank-you');
+            if ($thank_you_page) {
+                error_log('Redirecting to thank-you page');
+                wp_redirect(home_url('/thank-you/'));
+            } else {
+                error_log('Thank-you page not found, redirecting to home');
+                wp_redirect(home_url('/?form_status=' . ($mail_sent ? 'success' : 'error')));
+            }
+            exit;
+        } catch (Exception $e) {
+            // Log any exceptions
+            error_log('Exception in form submission handler: ' . $e->getMessage());
+            wp_redirect(home_url('/?form_status=error'));
+            exit;
         }
-        
-        // Send email using PHPMailer
-        $mail_sent = petcare_send_email($recipient_email, $subject, $message, $attachments);
-        
-        // Set a session variable to show a success message
-        if ($mail_sent) {
-            // Store success message in a session or transient
-            set_transient('form_submission_success', true, 60);
-        } else {
-            // Store error message
-            set_transient('form_submission_error', true, 60);
-        }
-        
-        // Redirect to prevent form resubmission
-        wp_redirect(home_url('/thank-you/'));
-        exit;
     }
 }
 add_action('template_redirect', 'petcare_handle_form_submission');
